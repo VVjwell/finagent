@@ -13,48 +13,12 @@
 
 `finAgent` 不是一个"接 ChatGPT 网页 + 调用函数"的玩具。它是一个**有持续记忆、有主动行为、可工具化扩展**的本地 Agent：
 
-- **多 MCP server 聚合**：通过 `MultiServerMCPClient` 一次启动 5 个 MCP server（你自己的 `finMCP` + 官方 `time` / `filesystem` / `memory` + 美联储 `fred`），统一在一个 LLM 上下文里调度。
 - **长期记忆 + 短期上下文 + 身份卡**：
-  - 长期事实走 Memory MCP 的知识图谱（`memory.json`）
-  - 短期对话走 LangGraph Checkpointer（CLI 用 `InMemorySaver`，Web 用 `AsyncSqliteSaver` 跨进程持久化）
-  - 用户画像浓缩为 `identity_card.md`（~250 token），启动时通过 `{{IDENTITY_CARD}}` 占位符注入 system prompt
-- **结构化交易 ledger**：`skills/portfolio.py` 维护 append-only JSONL ledger，所有"加/减仓"必须走 `record_trade` 工具，不能让 LLM 直接改文件，保证回放一致性。
-- **主动开口**：交互模式下 agent 启动时主动问候（kickoff），用户沉默 5 分钟主动戳一下（heartbeat），exit 时基于本次对话沉淀 memory / 写 journal（reflect）。
-- **每日仪式**：`--briefing morning|evening|weekend` 加载对应模板，单轮生成一份盘前 / 盘后 / 周末报告后退出。
-- **路径黑名单**：filesystem MCP 暴露给 LLM 时叠一层守卫，`.env` / `memory.json` / `portfolio.jsonl` / `.venv` 等敏感路径永远拒绝。
-- **CLI 行为字节级保留**：把 CLI 改成 Web 后端时，`stream_query` 拆出 async generator，CLI wrapper 翻译事件回 `print`，旧 `python cli.py` 体验完全不变。
-
-## 架构
-
-```
-                         ┌──────────────────────────────────────────┐
-                         │  cli.py (stdio)        web/  (browser)   │
-                         │     │                     │              │
-                         │     ▼                     ▼              │
-                         │  stream_query     server/main.py  ◄── REST + WS
-                         │     │                     │              │
-                         └─────┴──────────┬──────────┴──────────────┘
-                                          │
-                              utils/agent_core.py
-                              stream_query_events()  ← async generator
-                                          │
-                                          ▼
-                              langchain.agents.create_agent(...)
-                              │
-                  ┌───────────┼──────────────────────────────────┐
-                  │           │                                  │
-            ChatOpenAI   LangGraph                  MultiServerMCPClient
-            (.env 任意   Checkpointer               (tool_interceptors=log_tool_call)
-             OpenAI 兼容) (Sqlite/Memory)           │
-                                                    │
-              ┌─────────────────┬──────────────────┼────────────────┬──────────────────┐
-              ▼                 ▼                  ▼                ▼                  ▼
-         finMCP (stdio)    time (stdio)       filesystem (npx)  memory (npx)      fred (stdio)
-            │                                                         │
-            └─ skills/ 下每个 .py 都通过 @mcp.tool() 自动注册
-               (finnhub_quote / finnhub_financials / finnhub_news /
-                sec_filings / deep_search / portfolio /
-                semantic_memory / context_resolver / ...)
+  - 长期事实走 Memory MCP 的知识图谱
+  - 短期对话走 LangGraph Checkpointer）
+  - 用户画像注入 system prompt
+- **主动开口**：交互模式下 agent 启动时主动问候，用户沉默 5 分钟主动戳一下，退出时时基于本次对话沉淀 memory。
+- **每日仪式**：`单轮生成一份盘前 / 盘后 / 周末报告后退出。
 ```
 
 ## 快速开始
@@ -75,7 +39,7 @@
 ### 1. clone + venv + 装依赖
 
 ```bash
-git clone https://github.com/wusta/finagent.git
+git clone https://github.com/VVjwell/finagent.git
 cd finagent
 
 # 强烈建议用独立 venv，别污染 anaconda / 系统 Python
@@ -86,7 +50,7 @@ python -m venv .venv
 # Linux / macOS
 source .venv/bin/activate
 
-# 用 venv 自己的 pip 装，避免 PATH 解析坑（见下方"已知陷阱"）
+# 用 venv 自己的 pip 装，避免 PATH 解析坑
 .venv/Scripts/python -m pip install -r requirements.txt          # Windows
 .venv/bin/python -m pip install -r requirements.txt              # Unix
 ```
@@ -223,30 +187,6 @@ finagent/
 | `EMBEDDING_PROVIDER` | `zhipu` | 或 `local`（用 sentence-transformers） |
 | `FRED_API_KEY` | — | 填了才挂 FRED MCP，否则跳过 |
 | `FINNHUB_API_KEY` / `TAVILY_API_KEY` | — | 行情 / 网搜，不填对应工具不可用 |
-
-## 几个关键设计
-
-### 1. CLI / Web 共用一个事件流
-
-`utils/agent_core.py` 里 `stream_query_events()` 是 async generator，yield 出 5 类事件：
-
-```
-user / assistant_start / token / turn_break / done
-```
-
-CLI 端 `stream_query()` 把事件翻译成 `print(...)`（行为跟改造前字节级一致）；Web 端 `server/main.py:chat_ws` 直接把事件 JSON 化推给前端。改一处，两边都受益。
-
-### 2. 工具调用 trace 用 `contextvars` 路由
-
-`utils/mcp_tools.py:log_tool_call` 同一份代码：
-- CLI 路径：`current_event_queue.get() is None` → 走 `print`（旧的 `--debug` 体验）
-- WS 路径：handler 进来时 `current_event_queue.set(asyncio.Queue())` → 工具事件入队，前端就能看到可折叠的工具调用气泡
-
-这样**单进程多 WebSocket 连接**互不串扰，靠 asyncio 的 `contextvars` 任务级隔离。
-
-### 3. MCP 子进程进程级常驻
-
-服务进程启动时通过 FastAPI lifespan 起一次 `MultiServerMCPClient`，5 个 MCP server 的 stdio 子进程整个进程生命期都在跑。所有 WebSocket 连接共享同一个 `agent_executor`，只用 `thread_id` 区分会话——刷新页面不会重启 MCP。
 
 ### 4. 短期 vs 长期记忆分层
 
