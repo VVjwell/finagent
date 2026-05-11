@@ -1,0 +1,85 @@
+【Weekend Briefing · 周末展望 / 复盘】
+
+周末不看盘也得盯节奏。这份 briefing 的目的是把本周发生的事串成叙事，
+并把下周的重要事件挂到你的雷达上。
+
+──────────────────────────────────────────────────────────────
+Step 1｜时间锚定
+  - time.get_current_time（America/New_York）
+  - 推算本周的起止日期（周一到周五），用于文件名和搜索
+
+Step 2｜拉主人画像
+  - memory.open_nodes(["me"]) 如果本会话尚未读
+  - 重点 [watchlist]、[仓位]、[主题]
+
+Step 3｜本周宏观收官（FRED 关键序列 + 本周发布数据）
+  - 本周截至周五收盘的 DGS10 / DGS2 / T10Y2Y / VIXCLS / DTWEXBGS
+  - 本周有哪些 FRED 数据释放了新值（CPI / PPI / NFP / 零售销售 / GDP / Core PCE 等）？
+    看最新 observation 日期判断
+  - 每个数据：释放时市场预期 vs 实际值，用 deep_search 找 "consensus"
+
+Step 4｜本周市场整体
+  - 三大指数本周涨跌幅（优先 Finnhub 数据；缺失时用 deep_search 交叉验证）
+  - 本周涨跌风格（growth vs value / 大小盘 / 周期 vs 防御）
+
+Step 5｜Watchlist 本周
+  - 每个标的本周涨跌幅，排序列表
+  - 标出本周显著变动的 top 3
+
+Step 6｜Theme 周度回顾（核心章节）
+  - memory.search_nodes 找 active MacroTheme
+  - 对每个主题：
+    · 过去一周有哪些新的 observation（用 open_nodes 拉出来看时间戳）
+    · 叙事是推进、反转、还是停滞？
+    · 有没有出现新的 counter-evidence？
+  - 如果本周明显**新出现**的主题，建一个新的 MacroTheme entity
+
+Step 7｜投资组合 vs 画像一致性检查（如果 UserProfile 有 [仓位]）
+  - 当前持仓是否跟主人最近关注的 [主题] 方向一致？
+  - 是否触碰 [no-go] 清单？
+  - 是否偏离 [风险] 约定（比如单仓位超过上限）？
+  - **只提示不说教**。一致时说"一致"，不一致时具体指出哪里不一致
+
+Step 8｜下周关键日历
+  - 经济数据发布：deep_search 搜 "economic calendar next week" 或
+    "FOMC schedule" / "CPI release date" 等
+  - 主要财报：如果 watchlist 里有公司下周发财报，列出来
+  - 央行事件 / 政府报告 / G7 / 贸易谈判等主人关注的事
+
+Step 9｜综合输出（结构化 Markdown）
+    # 📊 Weekend Briefing · YYYY-WW（第 WW 周）
+
+    ## 一周叙事
+    （200 字左右，告诉主人本周最重要的故事是什么、为什么重要）
+
+    ## 本周宏观
+    | 事件/数据 | 预期 | 实际 | 市场反应 |
+
+    ## 本周市场
+    | 指数 | 周涨跌% | 风格特征 |
+
+    ## Watchlist 本周
+    | 代码 | 周涨跌% | 显著事件 |
+
+    ## 主题推进
+    ### 主题 A
+    本周状态：推进 / 停滞 / 反转。具体观察。
+
+    ## 仓位一致性检查
+    （一段话）
+
+    ## 下周雷达
+    ### 经济数据
+    ### 财报
+    ### 央行 / 政府
+
+    ---
+    *生成时间：YYYY-MM-DD HH:MM 美东*
+
+Step 10｜落盘
+  - filesystem.write_file → reports/daily/YYYY-MM-DD-weekend.md
+    （用当天的日期；文件名里不放周几）
+  - 同名冲突加 _v2 / _v3
+
+Step 11｜口头收官
+  用 2-3 句话跟主人说：本周最值得记住的事 + 下周最该盯的一个事件。

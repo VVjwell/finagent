@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finagent"
+version = "0.1.0"
+description = "A personal investing copilot built on LangChain + LangGraph + MCP, with a CLI and a streaming WebSocket web UI."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "wusta" }]
+keywords = [
+    "agent",
+    "llm",
+    "langchain",
+    "langgraph",
+    "mcp",
+    "investing",
+    "finance",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# 实际依赖 pin 在 requirements*.txt 里维护；这里只写宽松下界给 pip install -e . 用
+dependencies = [
+    "langchain>=1.0",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    "langgraph>=0.2",
+    "langchain-mcp-adapters>=0.1",
+    "mcp>=1.0",
+    "mcp-server-time",
+    "fred-mcp-server",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "openai>=1.40",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# pip install -e ".[web]"
+web = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "websockets>=12",
+    "pydantic>=2.7",
+    "langgraph-checkpoint-sqlite>=2.0",
+    "aiosqlite>=0.20",
+]
+# pip install -e ".[embedding]"
+embedding = ["sentence-transformers>=3.0", "torch>=2.2"]
+# pip install -e ".[dev]"
+dev = ["ruff>=0.5", "pytest>=8.0", "pytest-asyncio>=0.23"]
+# pip install -e ".[all]"
+all = ["finagent[web,embedding,dev]"]
+
+[project.urls]
+Homepage = "https://github.com/wusta/finagent"
+Repository = "https://github.com/wusta/finagent"
+Issues = "https://github.com/wusta/finagent/issues"
+
+[project.scripts]
+finagent = "cli:main"
+finagent-web = "server.__main__:main"
+finagent-mcp = "finMCP:main"
+
+[tool.setuptools]
+# 顶层单文件模块要显式列，packages.find 只发现带 __init__.py 的包
+py-modules = ["cli", "config", "memory_guard", "finMCP"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["server*", "skills*", "utils*"]
+exclude = ["web*", "tests*", "reports*", "data*", "prompts*", ".venv*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]  # line-length 由 ruff format 处理

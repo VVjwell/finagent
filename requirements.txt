@@ -1,0 +1,32 @@
+# finAgent CLI 核心依赖
+# 安装： .venv\Scripts\python.exe -m pip install -r requirements.txt
+#
+# 想跑 Web 服务再装一份： pip install -r requirements-server.txt
+# 想用本地 embedding 再装一份： pip install -r requirements-embedding.txt
+
+# ---------- LLM / Agent 框架 ----------
+langchain>=1.0
+langchain-core>=0.3
+langchain-openai>=0.2
+langgraph>=0.2
+
+# MCP 协议
+mcp>=1.0
+langchain-mcp-adapters>=0.1
+
+# ---------- MCP servers (Python 实现) ----------
+# time MCP：本地时间查询（mcp_server_time 是模块名）
+mcp-server-time
+# FRED MCP：可选（需要 FRED_API_KEY）。无 key 时 build_server_configs 会自动跳过
+fred-mcp-server
+
+# Filesystem MCP 和 Memory MCP 走 npx，不需要 pip 装；
+# 但需要本地安装 Node.js + npm，详见 README
+
+# ---------- 数据源 / HTTP ----------
+requests>=2.32
+python-dotenv>=1.0
+
+# ---------- 语义记忆索引（智谱 embedding 默认走 openai SDK） ----------
+openai>=1.40
+numpy>=1.26

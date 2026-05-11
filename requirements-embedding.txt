@@ -1,0 +1,11 @@
+# 本地 embedding 后端（可选）
+# 当 EMBEDDING_PROVIDER=local 时启用，让语义记忆完全离线、零 token 成本
+# 安装： .venv\Scripts\python.exe -m pip install -r requirements-embedding.txt
+#
+# 默认模型 BAAI/bge-small-zh-v1.5（~100MB），首次使用从 HuggingFace 拉权重
+# 想换模型改 .env 里的 LOCAL_EMBEDDING_MODEL / LOCAL_EMBEDDING_DIM
+
+sentence-transformers>=3.0
+# torch 是 sentence-transformers 的依赖，但 GPU/CPU 版本差异大，
+# 让 pip 按平台自动选；想用 CUDA 版本去官网拿对应命令
+torch>=2.2

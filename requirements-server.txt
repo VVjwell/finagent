@@ -1,0 +1,8 @@
+# Web server 专用依赖（CLI 不需要这几个，所以单独拆一个文件，方便只装一边）
+# 安装： .venv\Scripts\pip install -r requirements-server.txt
+fastapi>=0.115
+uvicorn[standard]>=0.30
+websockets>=12
+pydantic>=2.7
+langgraph-checkpoint-sqlite>=2.0
+aiosqlite>=0.20

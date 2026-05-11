@@ -1,0 +1,83 @@
+# ============================================================ #
+#  Secrets & credentials —— 绝对不能提交
+# ============================================================ #
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+id_rsa*
+credentials.json
+secrets.*
+
+# ============================================================ #
+#  Agent 私人数据 —— 跨会话状态、用户偏好、交易记录、对话历史
+# ============================================================ #
+# Memory MCP 的知识图谱（含用户偏好 / 历史结论）
+memory.json
+memory.json.bak.*
+*.bak.*
+
+# 结构化持仓 ledger（实际交易记录）+ 对话 checkpoint + 语义向量索引
+data/
+
+# Agent 生成的研究报告（含真实持仓的具体分析）。如想做 demo 仓库可改为 reports/_journal/* 等更细粒度
+reports/
+
+# Code interpreter sandbox：每次 run_python 开一个临时子目录
+reports/_sandbox/
+
+# 用户身份卡（onboarding 自动生成）
+reports/_profile/
+
+# 反思日记
+reports/_journal/
+
+# ============================================================ #
+#  Python
+# ============================================================ #
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+.uv/
+
+# ============================================================ #
+#  Node / 前端
+# ============================================================ #
+web/node_modules/
+web/dist/
+web/.vite/
+web/*.local
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+
+# ============================================================ #
+#  Logs / caches / debug
+# ============================================================ #
+*.log
+debug-*.log
+.cache/
+
+# ============================================================ #
+#  IDE / OS
+# ============================================================ #
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

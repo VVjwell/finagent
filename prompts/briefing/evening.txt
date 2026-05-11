@@ -1,0 +1,79 @@
+【Evening Briefing · 收盘后复盘】
+
+现在是美东收盘后。请给主人生成今日 briefing，严格按下面步骤执行。
+
+──────────────────────────────────────────────────────────────
+Step 1｜时间锚定
+  - time.get_current_time（America/New_York）
+  - 当天日期用于文件名和 observation 前缀
+
+Step 2｜拉主人画像
+  - memory.open_nodes(["me"]) 如果本会话尚未读
+  - 重点关注 [watchlist]、[仓位]、[主题]
+
+Step 3｜今日市场收盘状态（FRED + Finnhub）
+  - 三大指数：^GSPC（S&P 500）、^IXIC（Nasdaq）、^DJI（Dow），Finnhub quote
+  - 美债：DGS10、DGS2、T10Y2Y（FRED 最新值；如果今天没更新就标 "截至 [日期]"）
+  - VIX：VIXCLS
+  - 美元：DTWEXBGS
+
+Step 4｜Watchlist 收盘
+  - 从 UserProfile 取 watchlist
+  - 每个标的 finnhub_quote + 当日振幅
+  - **标出显著变动**（|日涨跌| > 3% 或 放量破 52 周高/低）
+
+Step 5｜今日发生了什么（找原因，不只报数）
+  - 对每个显著变动的标的，用 deep_search 搜"{ticker} {日期}"或 company-specific query
+  - 也搜一次当天 macro："CPI release"、"Fed speech"、"tariff" 等主人 UserProfile 关注的
+    宏观变量（挑 2-3 个最相关的搜）
+  - 识别出：今天最驱动市场的 2-3 个事件/数据/新闻
+
+Step 6｜Theme 推进记录
+  - memory.search_nodes 找 active MacroTheme
+  - 对受今天事件影响的主题：memory.add_observations，前缀
+    [演进] YYYY-MM-DD ... / [bull] / [bear] / [反证]
+  - 新出现的主题（之前 memory 没有但今天明显浮现的）→ memory.create_entities
+
+Step 7｜个人持仓切换信号（如果 UserProfile 有 [仓位]）
+  - 对每个持仓：今天表现 + 是否触发主人的风险红线（[风险] 里的阈值）
+  - 不主动建议操作，只提示"你的 [原则] 里说不加亏损单，XX 今天跌了 Y%，留意"
+  - **语气保持研究员而不是销售员**
+
+Step 8｜明日 catalyst 预告
+  - 明天有什么经济数据发布、财报、央行讲话？deep_search 搜一次
+  - 列 2-5 条
+
+Step 9｜综合输出（结构化 Markdown）
+    # 🌆 Evening Briefing · YYYY-MM-DD
+
+    ## TL;DR
+    （今天市场核心 takeaway，3-5 条）
+
+    ## 今日收盘
+    | 指标 | 收盘 | 涨跌% |
+
+    ## Watchlist 收盘
+    | 代码 | 收盘 | 涨跌% | 显著事件 |
+
+    ## 今日驱动因素
+    - 1-3 条，每条一小段解释
+
+    ## 主题推进
+    ### 主题 A
+    今天发生了什么、叙事是向 bull 还是 bear 方向走。
+
+    ## 持仓切片（如果有）
+    每个持仓一行：代码 | 今日 | 是否触发风险红线
+
+    ## 明日关注
+    - 经济数据 / 财报 / 央行
+
+    ---
+    *生成时间：YYYY-MM-DD HH:MM 美东*
+
+Step 10｜落盘
+  - filesystem.write_file → reports/daily/YYYY-MM-DD-evening.md
+  - 同名冲突加 _v2 / _v3
+
+Step 11｜口头收官
+  用 1-2 句话告诉主人"今天的 takeaway 是 X"，然后提醒明天要盯的那个最关键的事。

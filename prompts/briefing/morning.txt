@@ -1,0 +1,75 @@
+【Morning Briefing · 开盘前仪式】
+
+现在是美东盘前时段。请给主人生成今日 briefing，严格按下面步骤执行。不要跳步，
+不要省略，每一步都落实到相应的工具调用。
+
+──────────────────────────────────────────────────────────────
+Step 1｜时间锚定
+  - time.get_current_time（IANA 时区 America/New_York）
+  - 记住当天日期，后面写文件名和 memory observation 前缀都要用
+
+Step 2｜拉主人画像
+  - 如果会话开场已经读过 UserProfile "me"，继续用；否则 memory.open_nodes(["me"])
+  - 从 observations 里提取 [watchlist]、[主题]、[偏好]、[no-go] 四类
+
+Step 3｜宏观状态快照（FRED）
+  拉下列核心序列的最新观测值（series id 已列出，直接用）：
+    - DFF        联邦基金有效利率
+    - DGS10      10Y 美债收益率
+    - DGS2       2Y 美债收益率
+    - T10Y2Y     10Y-2Y 利差
+    - VIXCLS     VIX
+    - DTWEXBGS   贸易加权美元指数
+  如果主人 UserProfile 里单独标注了关注的具体指标（如 CPI / 核心 PCE / 非农），
+  也一并拉。对每条给"最新值 + 最近一次观测日期 + 若能看到，相对上次的边际变化"。
+
+Step 4｜Watchlist 报价快照（Finnhub）
+  - 从 UserProfile [watchlist] 提取代码列表
+  - 对每个用 finnhub_quote 拿：current、change、percent_change、high、low
+  - 格式化成一行：代码 | 现价 | 涨跌% | 距 52 周高位
+
+Step 5｜过去 12-18 小时的关键新闻
+  - 用 deep_search 搜索，query 用 active MacroTheme 名称 + watchlist 大票名称构造
+    （不要超过 3 次搜索；关键词要具体不要泛）
+  - 精选不超过 5 条，每条给：时间 | 标题 | 来源 | 一句话摘要
+  - 不要把 Yahoo 的导航菜单或站内广告当新闻
+
+Step 6｜Active MacroTheme 叙事更新
+  - memory.search_nodes 找 entityType=MacroTheme 的全部实体
+  - 对每个主题，根据今天的宏观数据和新闻判断"叙事有没有推进"
+  - 有推进就 memory.add_observations：前缀 [演进] YYYY-MM-DD 或 [数据锚] / [反证]
+  - 没进展的主题不要强行更新
+
+Step 7｜综合输出（结构化 Markdown）
+  必含的章节，顺序如下：
+    # 📅 Morning Briefing · YYYY-MM-DD
+
+    ## TL;DR
+    （3-5 条 bullet，"今天最该盯什么"）
+
+    ## 宏观快照
+    | 指标 | 最新值 | 日期 | 边际变化 |
+
+    ## Watchlist
+    | 代码 | 现价 | 涨跌% | 距 52 周高位 |
+
+    ## 关键新闻
+    - [时间] 标题 — 来源 — 一句话摘要
+
+    ## 主题更新
+    ### 主题 A
+    今日动向。1-3 句话。
+
+    ## 今日 catalyst
+    （财报 / 经济数据发布 / 央行事件；不确定的主动 deep_search 一下"earnings today"
+     或 "FOMC schedule"）
+
+    ---
+    *生成时间：YYYY-MM-DD HH:MM 美东*
+
+Step 8｜落盘
+  - filesystem.write_file → reports/daily/YYYY-MM-DD-morning.md
+  - 如果当天已有同名文件，在文件名末尾加 _v2 / _v3
+
+Step 9｜简短口头总结
+  写完报告后，跟主人用 2-3 句话说"今天一眼看重点是 X 和 Y"。不要复述整个报告。
